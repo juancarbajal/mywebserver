@@ -1,34 +1,62 @@
 package main
 
 import (
-	"github.com/kjk/common/tree/main/siser"
-	// "httplogsiser"
-	// "muloghttp"
+	"fmt"
+	"net/http"
 	"strconv"
-	"sync"
 	"time"
 )
 
-var (
-	muLogHTTP sync.Mutex
-)
+type HTTPReqInfo struct {
+	method    string
+	uri       string
+	referer   string
+	ipaddr    string
+	code      int
+	size      int64
+	duration  time.Duration
+	userAgent string
+}
 
-func logHTTPReq(ri *HTTPReqInfo) {
-	var rec siser.Record
-	rec.Name = "httplog"
-	rec.Append("method", ri.method)
-	rec.Append("uri", ri.uri)
-	if ri.referer != "" {
-		rec.Append("referer", ri.referer)
+func createLogRecord(r *http.Request) *HTTPReqInfo {
+	var ri HTTPReqInfo
+	if r.Method != "" {
+		ri.method = r.Method
 	}
-	rec.Append("ipaddr", ri.ipaddr)
-	rec.Append("code", strconv.Itoa(ri.code))
-	rec.Append("size", strconv.FormatInt(ri.size, 10))
-	durMs := ri.duration / time.Millisecond
-	rec.Append("duration", strconv.FormatInt(int64(durMs), 10))
-	rec.Append("ua", ri.userAgent)
+	if r.URL.String() != "" {
+		ri.uri = r.URL.String()
+	}
+	if r.Header.Get("Referer") != "" {
+		ri.referer = r.Header.Get("Referer")
+	}
+	if r.Header.Get("User-Agent") != "" {
+		ri.userAgent = r.Header.Get("User-Agent")
+	}
+	if r.Response != nil {
+		if r.Response.StatusCode != 0 {
+			ri.code, _ = strconv.Atoi(r.Response.Status)
+		}
+		if r.Response.ContentLength != 0 {
+			ri.code = int(r.Response.Request.ContentLength)
+		}
+	}
+	if r.RemoteAddr != "" {
+		ri.ipaddr = r.RemoteAddr
+	}
+	return &ri
+}
 
-	muLogHTTP.Lock()
-	defer muLogHTTP.Unlock()
-	_, _ = httpLogSiser.WriteRecord(&rec)
+// writeLog ...
+func writeLog(ri *HTTPReqInfo) error {
+	fmt.Printf("%s %s %s %s %d %d %s\n",
+		ri.method,
+		ri.uri,
+		ri.referer,
+		ri.userAgent,
+		ri.code,
+		ri.size,
+		ri.ipaddr)
+	fmt.Println(ri)
+	return nil
+
 }

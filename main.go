@@ -3,24 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/felixge/httpsnoop"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 )
-
-type HTTPReqInfo struct {
-	method    string
-	uri       string
-	referer   string
-	ipaddr    string
-	code      int
-	size      int64
-	duration  time.Duration
-	userAgent string
-}
 
 func textLoad(dir string, port string) string {
 	return fmt.Sprintf(`
@@ -29,7 +16,7 @@ func textLoad(dir string, port string) string {
 	Server running on port %s
 	Access from local machine: http://localhost:%s
 	Use Ctrl+C to stop the server
-        `, dir, port, port, port)
+        `, dir, port, port)
 }
 
 func getAbsoluteDir(dir string) (string, error) {
@@ -46,18 +33,8 @@ func getAbsoluteDir(dir string) (string, error) {
 
 func logRequestHandler(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
-		ri := &HTTPReqInfo{
-			method:    r.Method,
-			uri:       r.URL.String(),
-			referer:   r.Header.Get("Referer"),
-			userAgent: r.Header.Get("User-Agent"),
-		}
-		ri.ipaddr = requestGetRemoteAddress(r)
-		m := httpsnoop.CaptureMetrics(h, w, r)
-		ri.code = m.Code
-		//		ri.size = m.
-		ri.duration = m.Duration
-		logHTTPReq(ri)
+		writeLog(createLogRecord(r))
+
 		h.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
@@ -77,7 +54,7 @@ func main() {
 	}
 
 	fs := http.FileServer(http.Dir(absDir))
-	http.Handle("/", fs)
+	http.Handle("/", logRequestHandler(fs))
 
 	fmt.Println(textLoad(absDir, *port))
 
