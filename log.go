@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,13 +19,21 @@ type HTTPReqInfo struct {
 	userAgent string
 }
 
+func extractLastPart(s string, sep string) string {
+	idx := strings.LastIndex(s, sep)
+	if idx == -1 {
+		return s
+	}
+	return s[:idx]
+}
+
 func createLogRecord(r *http.Request) *HTTPReqInfo {
 	var ri HTTPReqInfo
 	if r.Method != "" {
 		ri.method = r.Method
 	}
 	if r.URL.String() != "" {
-		ri.uri = r.URL.String()
+		ri.uri = extractLastPart(r.URL.String(), "&")
 	}
 	if r.Header.Get("Referer") != "" {
 		ri.referer = r.Header.Get("Referer")
@@ -41,21 +50,23 @@ func createLogRecord(r *http.Request) *HTTPReqInfo {
 		}
 	}
 	if r.RemoteAddr != "" {
-		ri.ipaddr = r.RemoteAddr
+		// ri.ipaddr = ipAddrFromRemoteAddr(r.RemoteAddr)
+		ri.ipaddr = extractLastPart(r.RemoteAddr, ":")
 	}
 	return &ri
 }
 
 // writeLog ...
 func writeLog(ri *HTTPReqInfo) error {
-	fmt.Printf("%s %s %s %s %d %d %s\n",
+	fmt.Printf("%s %s %d %d %s %s %s\n",
 		ri.method,
 		ri.uri,
-		ri.referer,
-		ri.userAgent,
 		ri.code,
 		ri.size,
-		ri.ipaddr)
+		ri.ipaddr,
+		ri.referer,
+		ri.userAgent,
+	)
 	fmt.Println(ri)
 	return nil
 

@@ -34,7 +34,6 @@ func getAbsoluteDir(dir string) (string, error) {
 func logRequestHandler(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		writeLog(createLogRecord(r))
-
 		h.ServeHTTP(w, r)
 	}
 	return http.HandlerFunc(fn)
