@@ -14,7 +14,7 @@ build:
 run: build
 	./$(APP_EXECUTABLE)-linux
 clean:
-	rm -f $(APP_EXECUTABLE)-linux
+	rm -f $(APP_EXECUTABLE)-linux $(APP_EXECUTABLE)-darwin $(APP_EXECUTABLE)-windows $(APP_EXECUTABLE)
 # install:
 # 	$(APP_EXECUTABLE)
 # 	@echo "Installing $(APP_EXECUTABLE) to $(BINDIR)"
